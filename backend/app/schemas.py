@@ -55,3 +55,7 @@ class TokenPayload(BaseModel):
 
 class Message(BaseModel):
     message: str
+
+class EmailVerification(BaseModel):
+    email: EmailStr
+    token: str
