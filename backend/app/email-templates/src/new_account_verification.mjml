@@ -1,0 +1,30 @@
+<mjml>
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text font-size="20px" font-family="helvetica">
+          Welcome to {{ project_name }}, {{ username }}!
+        </mj-text>
+        <mj-text>
+          Thank you for registering. To complete your registration and verify your email address, please click the button below.
+        </mj-text>
+        <mj-text>
+          This link is valid for {{ valid_hours }} hours.
+        </mj-text>
+        <mj-button href="{{ link }}" background-color="#007bff" color="white">
+          Verify Your Account
+        </mj-button>
+        <mj-text>
+          If you did not create an account, no further action is required.
+        </mj-text>
+        <mj-divider border-color="#F45E43"></mj-divider>
+        <mj-text>
+          If you're having trouble clicking the button, copy and paste the URL below into your web browser:
+        </mj-text>
+        <mj-text>
+          <a href="{{ link }}">{{ link }}</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
