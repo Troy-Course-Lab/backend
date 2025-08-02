@@ -12,6 +12,7 @@ class UserCreate(BaseModel):
     name: str
     major: str | None = None
     class_: str | None = None
+    role: str = "user"
 
 
 # Properties to receive via API on user update
@@ -55,7 +56,3 @@ class TokenPayload(BaseModel):
 
 class Message(BaseModel):
     message: str
-
-class EmailVerification(BaseModel):
-    email: EmailStr
-    token: str
