@@ -1,33 +1,36 @@
-import sentry_sdk
-from fastapi import FastAPI
-from fastapi.routing import APIRoute
-from starlette.middleware.cors import CORSMiddleware
+from fastapi import APIRouter, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.main import api_router
+# The obsolete 'items' router has been removed.
+from app.api.routes import login, private, users, utils
 from app.core.config import settings
 
-
-def custom_generate_unique_id(route: APIRoute) -> str:
-    return f"{route.tags[0]}-{route.name}"
-
-
-if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
-    sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
-
+# Create the FastAPI app instance
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    generate_unique_id_function=custom_generate_unique_id,
 )
 
-# Set all CORS enabled origins
-if settings.all_cors_origins:
+# Set up CORS middleware
+if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.all_cors_origins,
+        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
-app.include_router(api_router, prefix=settings.API_V1_STR)
+api_router = APIRouter()
+
+# Include only the necessary and active routers for the application.
+api_router.include_router(login.router, prefix="/api/v1")
+api_router.include_router(users.router, prefix="/api/v1")
+api_router.include_router(utils.router, prefix="/api/v1")
+
+# Conditionally include the 'private' router for local development environments.
+if settings.ENVIRONMENT == "local":
+    api_router.include_router(private.router, prefix="/api/v1")
+
+# Include the API router in the main app
+app.include_router(api_router)

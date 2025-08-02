@@ -39,7 +39,6 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
         )
-    # The 'sub' field in the token is expected to be the user's email.
     user = crud.get_user_by_email(session=session, email=token_data.sub)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -49,26 +48,46 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-def get_current_active_verified_user(current_user: CurrentUser) -> User:
+def get_current_active_user(current_user: CurrentUser) -> User:
+    if not current_user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
+
+
+def get_current_active_superuser(current_user: CurrentUser) -> User:
     """
-    Dependency to get the current user, ensuring they are active and verified.
+    Dependency to get the current user, ensuring they have superuser privileges.
+    In this codebase, superuser is equivalent to admin2 role.
     """
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
-    if not current_user.is_verified:
-        raise HTTPException(status_code=400, detail="User has not verified email.")
+    if current_user.role != "admin2":
+        raise HTTPException(
+            status_code=403, detail="The user doesn't have enough privileges"
+        )
+    return current_user
+
+
+def get_current_admin2_user(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
+    """
+    Dependency to get the current user, ensuring they have the 'admin2' role.
+    """
+    if current_user.role != "admin2":
+        raise HTTPException(
+            status_code=403, detail="The user doesn't have enough privileges"
+        )
     return current_user
 
 
 def require_permission(required_permissions: list[str]):
     """
     Dependency factory to check if the current user has the required permissions.
-    - Admin Level 2 ('admin2') bypasses all permission checks.
-    - Checks if the user's permissions are a superset of the required permissions.
     """
 
     def permission_checker(
-        current_user: User = Depends(get_current_active_verified_user),
+        current_user: User = Depends(get_current_active_user),
     ):
         if "admin2" == current_user.role:
             return current_user
