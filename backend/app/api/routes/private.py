@@ -1,38 +1,41 @@
+import uuid
 from typing import Any
 
-from fastapi import APIRouter
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import func, select
 
-from app.api.deps import SessionDep
-from app.core.security import get_password_hash
-from app.models import (
-    User,
-    UserPublic,
+# Corrected dependency import to use the new role-based checker
+from app.api.deps import get_current_admin2_user, SessionDep
+# Corrected schema import path
+from app.schemas import User
+from app.models import User as UserModel
+
+router = APIRouter(
+    prefix="/private",
+    tags=["private"],
+    # Updated dependency to protect all routes in this file
+    dependencies=[Depends(get_current_admin2_user)],
 )
 
-router = APIRouter(tags=["private"], prefix="/private")
 
-
-class PrivateUserCreate(BaseModel):
-    email: str
-    password: str
-    full_name: str
-    is_verified: bool = False
-
-
-@router.post("/users/", response_model=UserPublic)
-def create_user(user_in: PrivateUserCreate, session: SessionDep) -> Any:
+@router.get("/users-count/", response_model=int)
+def read_users_count(session: SessionDep) -> Any:
     """
-    Create a new user.
+    Retrieve the total number of users in the system.
+    (Requires admin2 privileges)
     """
+    count_statement = select(func.count()).select_from(UserModel)
+    count = session.exec(count_statement).one()
+    return count
 
-    user = User(
-        email=user_in.email,
-        full_name=user_in.full_name,
-        hashed_password=get_password_hash(user_in.password),
-    )
 
-    session.add(user)
-    session.commit()
-
+@router.get("/user/{user_id}", response_model=User)
+def read_user_by_id(user_id: uuid.UUID, session: SessionDep) -> Any:
+    """
+    Get a specific user by their UUID.
+    (Requires admin2 privileges)
+    """
+    user = session.get(UserModel, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     return user

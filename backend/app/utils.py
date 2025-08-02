@@ -17,7 +17,7 @@ def send_email(
     """
     Sends an email using the configured SMTP server.
     """
-    assert settings.EMAILS_ENABLED, "Emailing is not enabled in the settings."
+    assert settings.emails_enabled, "Emailing is not enabled in the settings."
     message = emails.Message(
         subject=JinjaTemplate(subject_template),
         html=JinjaTemplate(html_template),
@@ -40,8 +40,8 @@ def generate_test_email(email_to: str) -> Dict[str, str]:
     """
     subject = f"{settings.PROJECT_NAME} - Test Email"
     
-    # Read the test email template
-    template_path = Path(__file__).parent / "email-templates" / "src" / "test_email.mjml"
+    # Read the test email HTML template
+    template_path = Path(__file__).parent / "email-templates" / "src" / "test_email.html"
     with open(template_path) as f:
         html_template = f.read()
     
@@ -61,7 +61,7 @@ def send_new_account_email(email_to: str, username: str, token: str) -> None:
     # Construct the verification link
     link = f"{settings.SERVER_HOST}/api/v1/verify-email?token={token}"
     
-    template_path = Path(__file__).parent / "email-templates" / "src" / "new_account_verification.mjml"
+    template_path = Path(__file__).parent / "email-templates" / "src" / "new_account_verification.html"
     with open(template_path) as f:
         html_template = f.read()
 

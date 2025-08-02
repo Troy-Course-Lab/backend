@@ -30,7 +30,7 @@ def register_new_user(session: SessionDep, user_in: UserCreate) -> Message:
 
     user = crud.create_user(session=session, user_in=user_in)
 
-    if settings.EMAILS_ENABLED:
+    if settings.emails_enabled:
         token = generate_email_verification_token(email=user.email)
         send_new_account_email(email_to=user.email, username=user.name, token=token)
 
