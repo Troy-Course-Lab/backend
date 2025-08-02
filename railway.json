@@ -5,7 +5,9 @@
       "dockerfilePath": "backend/Dockerfile"
     },
     "deploy": {
-      "startCommand": "bash scripts/prestart.sh && fastapi run --workers 4 app/main.py",
-      "healthcheckPath": "/api/v1/utils/health-check/"
+      "startCommand": "bash scripts/prestart.sh && fastapi run --host 0.0.0.0 --workers 4 app/main.py",
+      "healthcheckPath": "/api/v1/utils/health-check/",
+      "healthcheckTimeout": 10,
+      "restartPolicyMaxRetries": 10
     }
   }
