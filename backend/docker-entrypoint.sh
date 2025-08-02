@@ -3,13 +3,16 @@
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
+# Set Python path to include current directory
+export PYTHONPATH=$(pwd):$PYTHONPATH
+
 # Run migrations
 echo "--- Running database migrations ---"
-cd /app/backend && alembic upgrade head
+alembic upgrade head
 
 # Create initial data in database
 echo "--- Creating initial data ---"
-cd /app/backend && python app/initial_data.py
+python -m app.initial_data
 
 # Start the application server
 echo "--- Starting Uvicorn server ---"

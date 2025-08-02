@@ -5,7 +5,7 @@
       "dockerfilePath": "backend/Dockerfile"
     },
     "deploy": {
-      "startCommand": "bash /app/docker-entrypoint.sh",
+      "startCommand": "bash /app/backend/docker-entrypoint.sh",
       "restartPolicyType": "ON_FAILURE",
       "restartPolicyMaxRetries": 10
     }
