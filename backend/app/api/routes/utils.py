@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends
-from pydantic.networks import EmailStr
-
-from app.api.deps import get_current_active_superuser
+from app.core.config import settings
+from app.core.security import get_current_active_superuser
 from app.schemas import Message
-from app.utils import generate_test_email, send_email
+from pydantic import EmailStr
 
-router = APIRouter(prefix="/utils", tags=["utils"])
+router = APIRouter()
 
 
 @router.post(
@@ -14,22 +13,28 @@ router = APIRouter(prefix="/utils", tags=["utils"])
     status_code=201,
 )
 def test_email(email_to: EmailStr) -> Message:
-    """
-    Test emails.
-    """
-    email_data = generate_test_email(email_to=email_to)
+    from app.email_service import send_email
+
     send_email(
         email_to=email_to,
-        subject_template=email_data["subject"],
-        html_template=email_data["html_content"],
-        environment={
-            "project_name": "Test Project",
-            "email": email_to,
-        },
+        subject="Test email",
+        template_name="test_email.html",
     )
+
     return Message(message="Test email sent")
 
 
 @router.get("/health-check/")
 async def health_check() -> bool:
     return True
+
+
+@router.get("/debug/cors/")
+async def debug_cors() -> dict:
+    """Debug endpoint to check CORS configuration"""
+    return {
+        "BACKEND_CORS_ORIGINS": settings.BACKEND_CORS_ORIGINS,
+        "all_cors_origins": settings.all_cors_origins,
+        "FRONTEND_HOST": settings.FRONTEND_HOST,
+        "ENVIRONMENT": settings.ENVIRONMENT,
+    }
