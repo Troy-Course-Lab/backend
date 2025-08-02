@@ -19,7 +19,8 @@ class User(SQLModel, table=True):
 
     # Granular permissions
     permissions: List[str] = Field(
-        sa_column=Column(ARRAY(String)), default_factory=list, nullable=False
+        sa_column=Column(ARRAY(String), nullable=False, server_default="{}"),
+        default_factory=list,
     )
 
     is_active: bool = Field(default=True)
