@@ -33,5 +33,7 @@ RUN uv sync
 
 # --- MODIFICATION END ---
 
+COPY backend/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 # Set the command to run the application
 CMD ["fastapi", "run", "--workers", "4", "app/main.py"]
