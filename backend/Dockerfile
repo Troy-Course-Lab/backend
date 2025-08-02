@@ -1,43 +1,37 @@
+# Use an official Python runtime as a parent image
 FROM python:3.10
 
+# Set environment variables for Python and uv
 ENV PYTHONUNBUFFERED=1
-
-WORKDIR /app/
-
-# Install uv
-# Ref: https://docs.astral.sh/uv/guides/integration/docker/#installing-uv
-COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
-
-# Place executables in the environment at the front of the path
-# Ref: https://docs.astral.sh/uv/guides/integration/docker/#using-the-environment
-ENV PATH="/app/.venv/bin:$PATH"
-
-# Compile bytecode
-# Ref: https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
 ENV UV_COMPILE_BYTECODE=1
-
-# uv Cache
-# Ref: https://docs.astral.sh/uv/guides/integration/docker/#caching
 ENV UV_LINK_MODE=copy
-
-# Install dependencies
-# Ref: https://docs.astral.sh/uv/guides/integration/docker/#intermediate-layers
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-install-project
-
 ENV PYTHONPATH=/app
 
-COPY ./scripts /app/scripts
+# Set the working directory
+WORKDIR /app/
 
-COPY ./pyproject.toml ./uv.lock ./alembic.ini /app/
+# Install uv - a fast Python package installer
+COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
 
-COPY ./app /app/app
+# Add the virtual environment to the PATH
+ENV PATH="/app/.venv/bin:$PATH"
 
-# Sync the project
-# Ref: https://docs.astral.sh/uv/guides/integration/docker/#intermediate-layers
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync
+# --- MODIFICATION START ---
+# This section is corrected to use the proper file paths.
 
+# 1. Copy only the files needed for dependency installation from the backend/ directory.
+COPY backend/pyproject.toml backend/uv.lock ./
+
+# 2. Install dependencies.
+RUN uv sync --frozen --no-install-project
+
+# 3. Copy the rest of the backend application code, not the whole repository.
+COPY backend/ .
+
+# 4. Install the project itself into the virtual environment.
+RUN uv sync
+
+# --- MODIFICATION END ---
+
+# Set the command to run the application
 CMD ["fastapi", "run", "--workers", "4", "app/main.py"]
