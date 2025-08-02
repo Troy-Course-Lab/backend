@@ -1,54 +1,63 @@
-import uuid
-from typing import Any
-
 from sqlmodel import Session, select
 
 from app.core.security import get_password_hash, verify_password
-from app.models import Item, ItemCreate, User, UserCreate, UserUpdate
+from app.models import User
+from app.schemas import UserCreate, UserUpdate
 
 
-def create_user(*, session: Session, user_create: UserCreate) -> User:
-    db_obj = User.model_validate(
-        user_create, update={"hashed_password": get_password_hash(user_create.password)}
-    )
-    session.add(db_obj)
-    session.commit()
-    session.refresh(db_obj)
-    return db_obj
+def get_user_by_email(*, session: Session, email: str) -> User | None:
+    """
+    Retrieve a user from the database based on their email address.
+    """
+    statement = select(User).where(User.email == email)
+    return session.exec(statement).first()
 
 
-def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> Any:
-    user_data = user_in.model_dump(exclude_unset=True)
-    extra_data = {}
-    if "password" in user_data:
-        password = user_data["password"]
-        hashed_password = get_password_hash(password)
-        extra_data["hashed_password"] = hashed_password
-    db_user.sqlmodel_update(user_data, update=extra_data)
+def create_user(*, session: Session, user_in: UserCreate) -> User:
+    """
+    Create a new user in the database.
+    The password is automatically hashed before saving.
+    """
+    # Create a dictionary of the user data, excluding the password
+    user_data = user_in.model_dump(exclude={"password"})
+    # Hash the password and add it to the user data
+    user_data["hashed_password"] = get_password_hash(user_in.password)
+    
+    db_user = User(**user_data)
+    
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
     return db_user
 
 
-def get_user_by_email(*, session: Session, email: str) -> User | None:
-    statement = select(User).where(User.email == email)
-    session_user = session.exec(statement).first()
-    return session_user
+def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> User:
+    """
+    Update a user's details in the database.
+    """
+    user_data = user_in.model_dump(exclude_unset=True)
+    if "password" in user_data and user_data["password"]:
+        hashed_password = get_password_hash(user_data["password"])
+        del user_data["password"]
+        user_data["hashed_password"] = hashed_password
+        
+    for key, value in user_data.items():
+        setattr(db_user, key, value)
+        
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
+    return db_user
 
 
 def authenticate(*, session: Session, email: str, password: str) -> User | None:
+    """
+    Authenticate a user by email and password.
+    Returns the user object if authentication is successful, otherwise None.
+    """
     db_user = get_user_by_email(session=session, email=email)
     if not db_user:
         return None
     if not verify_password(password, db_user.hashed_password):
         return None
     return db_user
-
-
-def create_item(*, session: Session, item_in: ItemCreate, owner_id: uuid.UUID) -> Item:
-    db_item = Item.model_validate(item_in, update={"owner_id": owner_id})
-    session.add(db_item)
-    session.commit()
-    session.refresh(db_item)
-    return db_item
