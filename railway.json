@@ -5,7 +5,7 @@
       "dockerfilePath": "backend/Dockerfile"
     },
     "deploy": {
-      "startCommand": "bash scripts/prestart.sh && fastapi run --host 0.0.0.0 --workers 4 app/main.py",
+      "startCommand": "bash scripts/prestart.sh && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4",
       "healthcheckPath": "/api/v1/utils/health-check/",
       "healthcheckTimeout": 10,
       "restartPolicyMaxRetries": 10
